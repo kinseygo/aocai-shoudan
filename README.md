@@ -19,7 +19,7 @@
 
 1. 安装 [Python 3](https://www.python.org/downloads/)（勾选 Add Python to PATH）
 2. 双击 `启动澳彩收单.bat`
-3. 浏览器打开登录页（默认 http://127.0.0.1:5000 ）
+3. 浏览器打开登录页（默认 http://127.0.0.1:9000 ）
 
 或命令行：
 
@@ -55,7 +55,7 @@ python aocai_app.py
 1. 下载并安装 [cloudflared](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/downloads/)
 2. 启动本机程序后，运行：
    ```
-   cloudflared tunnel --url http://127.0.0.1:5000
+   cloudflared tunnel --url http://127.0.0.1:9000
    ```
 3. 会得到一个 `https://xxxx.trycloudflare.com` 临时网址，任意设备打开即可访问
 4. 绑定自己的域名：登录 Cloudflare 控制台 → Zero Trust → Tunnels → 创建隧道并绑定域名

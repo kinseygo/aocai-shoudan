@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-澳彩收单系统 · 独立版
+明澳彩收单系统 · 独立版
 运行：python aocai_app.py
-浏览器打开 http://127.0.0.1:5000
+浏览器打开 http://127.0.0.1:9000
 超级用户：admin   密码：gjxing1111
 """
 from __future__ import annotations
@@ -123,6 +123,10 @@ def init_db():
         total_bet REAL, total_win REAL, net_amount REAL,
         UNIQUE(customer_id, period_id)
     );
+    CREATE TABLE IF NOT EXISTS settings (
+        key TEXT PRIMARY KEY,
+        value TEXT
+    );
     """)
     if db.execute("SELECT COUNT(*) FROM users").fetchone()[0] == 0:
         db.execute("INSERT INTO users (username, password) VALUES (?,?)",
@@ -130,6 +134,8 @@ def init_db():
     if db.execute("SELECT COUNT(*) FROM customers").fetchone()[0] == 0:
         db.execute("INSERT INTO customers (name, note) VALUES ('张三','示例客户')")
         db.execute("INSERT INTO customers (name, note) VALUES ('李四','示例客户')")
+    if db.execute("SELECT COUNT(*) FROM settings WHERE key='invite_code'").fetchone()[0] == 0:
+        db.execute("INSERT INTO settings (key, value) VALUES ('invite_code', 'aocai2026')")
     db.commit()
     db.close()
 
@@ -174,7 +180,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display"
 a{color:inherit;text-decoration:none}
 h1{font-size:28px;margin-bottom:4px;font-weight:700;letter-spacing:-.02em}
 h2{font-size:22px;font-weight:700;letter-spacing:-.02em}
-nav{position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:2px;padding:8px 14px;background:rgba(255,255,255,.85);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none}
+nav{position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:2px;padding:8px 14px;background:rgba(250,238,190,.92);backdrop-filter:saturate(180%) blur(20px);-webkit-backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid #e8d98f;overflow-x:auto;scrollbar-width:none}
 nav::-webkit-scrollbar{display:none}
 nav a,nav span{flex-shrink:0;white-space:nowrap}
 nav a{color:var(--ink);padding:8px 13px;border-radius:999px;font-size:14px;font-weight:500;transition:background .15s}
@@ -191,6 +197,12 @@ nav .logo{font-weight:700;font-size:17px;margin-right:8px;letter-spacing:-.02em}
 .btn-d{background:var(--bad);color:#fff}
 .btn-o{background:#fff;border:1px solid var(--line);color:var(--ink)}
 .btn-s{background:var(--ok);color:#fff}
+.btn-batch-on{background:#e08600;color:#fff;box-shadow:0 0 0 2px rgba(224,134,0,.35)}
+.pick{display:inline-flex;align-items:center;gap:4px;background:var(--accent);color:#fff;border-radius:8px;padding:4px 9px;font-size:13px;font-weight:600;animation:pickIn .25s ease}
+.pick.has{background:var(--warn)}
+.pick a{color:#fff;text-decoration:none;font-weight:700;margin-left:2px;opacity:.85}
+.pick a:hover{opacity:1}
+@keyframes pickIn{0%{transform:scale(.6);opacity:0}100%{transform:scale(1);opacity:1}}
 input,select,textarea{height:40px;padding:0 12px;border:1px solid var(--line);border-radius:10px;font-size:15px;background:#fff;font-family:inherit;color:var(--ink);outline:none;transition:border-color .15s}
 input:focus,select:focus,textarea:focus{border-color:var(--accent)}
 textarea{height:auto;padding:10px 12px;width:100%}
@@ -203,6 +215,8 @@ tr:last-child td{border-bottom:none}
 .nb:active{transform:scale(.94)}
 .nb.sel{border-color:var(--accent);background:#e8f1ff;box-shadow:0 0 0 2px rgba(0,122,255,.15)}
 .nb.has{border-color:var(--accent);background:#f0f6ff}
+.nb.flash{animation:nbFlash .5s ease}
+@keyframes nbFlash{0%{box-shadow:0 0 0 0 rgba(255,165,0,.75);background:#fff3d6}40%{transform:scale(1.12);box-shadow:0 0 0 6px rgba(255,165,0,.35);background:#ffe9b8;border-color:#f0a020}100%{box-shadow:0 0 0 0 rgba(255,165,0,0);transform:scale(1)}}
 .nb.r{border-bottom:3px solid var(--red)}.nb.b{border-bottom:3px solid var(--blue)}.nb.g{border-bottom:3px solid var(--green)}
 .layout{display:grid;grid-template-columns:200px 1fr 280px;gap:14px;align-items:start}
 .cust{display:block;width:100%;text-align:left;padding:10px 12px;border:none;background:none;cursor:pointer;border-radius:10px;color:var(--ink);font-size:15px;margin-bottom:2px}
@@ -255,10 +269,10 @@ def page(title, body, active=""):
     flash_html = f'<div class="tip noprint">{flash}</div>' if flash else ""
     return f"""<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{title} · 澳彩收单</title>
+<title>{title} · 明澳彩收单</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Noto+Sans+SC:wght@400;500;600&display=swap">
 <style>{CSS}</style></head><body>
-<nav class="noprint"><span class="logo">澳彩收单</span>{links}
+<nav class="noprint"><span class="logo"><svg viewBox="0 0 24 24" width="21" height="21" style="vertical-align:-4px;margin-right:6px" aria-hidden="true"><defs><linearGradient id="lgg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f7b733"/><stop offset="1" stop-color="#e0432e"/></linearGradient></defs><circle cx="12" cy="12" r="11" fill="url(#lgg)"/><circle cx="12" cy="12" r="8.6" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="1"/><text x="12" y="16.2" text-anchor="middle" font-size="12.5" font-weight="700" fill="#fff" font-family="Noto Sans SC,sans-serif">明</text></svg>明澳彩收单</span>{links}
 <span style="margin-left:auto;display:flex;align-items:center;gap:10px;font-size:13px;opacity:.9">
 第 {day} 期 · {iso}
 <a class="nav-save" href="/save-now">保存数据</a>
@@ -283,10 +297,10 @@ def login():
         err = "用户名或密码错误"
     return f"""<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>登录 · 澳彩收单</title><style>{CSS}</style></head><body>
+<title>登录 · 明澳彩收单</title><style>{CSS}</style></head><body>
 <div class="login-box">
-<p style="font-size:11px;letter-spacing:.2em;color:var(--muted)">AOCAI LEDGER</p>
-<h1 style="font-size:24px;margin:4px 0 6px">澳彩收单系统</h1>
+<p style="font-size:11px;letter-spacing:.2em;color:var(--muted)">MING AOCAI LEDGER</p>
+<h1 style="font-size:24px;margin:4px 0 6px;display:flex;align-items:center;justify-content:center;gap:8px"><svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><defs><linearGradient id="lgl" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f7b733"/><stop offset="1" stop-color="#e0432e"/></linearGradient></defs><circle cx="12" cy="12" r="11" fill="url(#lgl)"/><circle cx="12" cy="12" r="8.6" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="1"/><text x="12" y="16.2" text-anchor="middle" font-size="12.5" font-weight="700" fill="#fff" font-family="Noto Sans SC,sans-serif">明</text></svg>明澳彩收单系统</h1>
 <p style="color:var(--muted);font-size:13px;margin-bottom:16px">独立版 · 登录后进入主页</p>
 <form method="post">
 <label style="font-size:12px;color:var(--muted)">用户名</label>
@@ -305,20 +319,29 @@ def register():
     if request.method == "POST":
         u = request.form.get("username", "").strip()
         p = request.form.get("password", "")
+        code = request.form.get("invite", "").strip()
         if len(u) < 2 or len(p) < 8:
             err = "用户名至少2位，密码至少8位"
         else:
-            try:
-                get_db().execute("INSERT INTO users (username,password) VALUES (?,?)", (u, hash_pw(p)))
-                get_db().commit()
-                return redirect("/login")
-            except sqlite3.IntegrityError:
-                err = "用户名已存在"
+            db = get_db()
+            row = db.execute("SELECT value FROM settings WHERE key='invite_code'").fetchone()
+            correct = row["value"] if row else "aocai2026"
+            if code != correct:
+                err = "邀请码不正确，请联系管理员"
+            else:
+                try:
+                    db.execute("INSERT INTO users (username,password) VALUES (?,?)", (u, hash_pw(p)))
+                    db.commit()
+                    return redirect("/login")
+                except sqlite3.IntegrityError:
+                    err = "用户名已存在"
     return f"""<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><style>{CSS}</style></head><body>
 <div class="login-box"><h1>注册新用户</h1>
+<p class="muted" style="margin:6px 0 14px">需邀请码才能注册，请联系管理员获取</p>
 <form method="post" style="margin-top:16px">
 <input name="username" placeholder="用户名" required style="width:100%;margin-bottom:10px">
 <input type="password" name="password" placeholder="密码至少8位" required style="width:100%;margin-bottom:10px">
+<input name="invite" placeholder="邀请码" required style="width:100%;margin-bottom:10px">
 {f'<p style="color:var(--bad)">{err}</p>' if err else ''}
 <button class="btn btn-p" style="width:100%">注册</button>
 </form><p style="margin-top:12px"><a href="/login">返回登录</a></p></div></body></html>"""
@@ -434,7 +457,14 @@ def index():
     for z in ZODIAC_ORDER:
         ns = " ".join(pad2(x) for x in ZODIAC_MAP[z])
         zod_html += f"""<button type="button" class="nb" style="aspect-ratio:auto;padding:8px"
-          onclick="one('zodiac','{z}')">{z}<div style="font-size:9px;color:var(--muted);font-weight:400">{ns}</div></button>"""
+          onclick="one(this,'zodiac','{z}')">{z}<div style="font-size:9px;color:var(--muted);font-weight:400">{ns}</div></button>"""
+
+    color_html = ""
+    for c, clr in (("红", "var(--red)"), ("蓝", "var(--blue)"), ("绿", "var(--green)")):
+        ns = " ".join(pad2(x) for x in COLOR_MAP[c])
+        color_html += f"""<button type="button" class="nb" style="aspect-ratio:auto;padding:10px 6px;background:{clr};color:#fff;border:none"
+          onclick="one(this,'color','{c}')"><span style="font-size:15px;font-weight:700">{c}波</span>
+          <span style="font-size:9px;opacity:.95;font-weight:400;margin-top:3px;line-height:1.6">{ns}</span></button>"""
 
     bet_rows = "".join(
         f"""<label class="betrow">
@@ -449,7 +479,7 @@ def index():
         <div class="muted" style="margin-bottom:4px">录入日期（可补录 / 修改历史）</div>
         <input type="date" name="date" value="{iso}" onchange="this.form.submit()">
       </div>
-      <p class="muted">单击多选号码，输入统一金额后批量录入。生肖/波色点选后弹出金额框。</p>
+      <p class="muted">点「批量录入选中」弹出多选框，点数字依序加入后输入统一金额同时录入。单个数字直接点击录入；已押注数字点击可继续追加。</p>
       <input type="hidden" name="cid" value="{cid or ''}">
     </form>
     <div class="layout">
@@ -459,29 +489,38 @@ def index():
         <div class="grid7" style="margin-top:8px">{nums_html}</div>
         <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">
           <span id="seln" class="muted">已选 0</span>
-          <input type="number" id="bam" placeholder="统一金额" style="width:110px">
-          <button class="btn btn-p" type="button" onclick="batch()">批量录入选中</button>
+          <button class="btn btn-p" type="button" id="batchBtn" onclick="openBatch()">批量录入选中</button>
           <button class="btn btn-o" type="button" onclick="clr()">清空选择</button>
+        </div>
+        <div id="bmodal" style="display:none;margin-top:12px;border:2px solid var(--accent);border-radius:12px;padding:14px;background:var(--elev)">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <b>批量录入 · 多选数字</b>
+            <button class="btn btn-o" type="button" onclick="closeBatch()" style="height:28px;padding:0 10px;font-size:12px">收起</button>
+          </div>
+          <p class="muted" style="margin:0 0 8px">点击数字网格中的号码依序加入下方；再点已加入号码可取消。已押注号码可继续多选。</p>
+          <div id="picklist" style="min-height:46px;border:1px dashed var(--line);border-radius:10px;padding:8px;display:flex;flex-wrap:wrap;gap:6px;align-content:flex-start;background:#fff">尚未选择数字</div>
+          <div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <span class="muted">金额</span>
+            <input type="number" id="bam2" placeholder="统一金额" style="width:120px">
+            <button class="btn btn-s" type="button" onclick="confirmBatch()">确定录入</button>
+          </div>
         </div>
         <b style="display:block;margin:12px 0 6px">生肖</b>
         <div class="grid7" style="grid-template-columns:repeat(6,1fr)">{zod_html}</div>
-        <div style="margin-top:10px;display:flex;gap:8px">
-          <button class="btn" style="background:var(--red);color:#fff" type="button" onclick="one('color','红')">红波</button>
-          <button class="btn" style="background:var(--blue);color:#fff" type="button" onclick="one('color','蓝')">蓝波</button>
-          <button class="btn" style="background:var(--green);color:#fff" type="button" onclick="one('color','绿')">绿波</button>
-        </div>
+        <b style="display:block;margin:12px 0 6px">波色</b>
+        <div class="grid7" style="grid-template-columns:repeat(3,1fr);margin-top:8px">{color_html}</div>
       </div>
       <div class="card">
-        <b>当前客户押注</b>
-        <div style="margin:8px 0;display:flex;gap:6px;flex-wrap:wrap">
-          <button class="btn btn-o" type="button" onclick="selAll()">全选</button>
-          <button class="btn btn-o" type="button" onclick="clrBets()">清除选择</button>
-          <button class="btn btn-d" type="button" onclick="delSel()">删除选中</button>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
+          <b>当前客户押注</b>
+          <span style="font-size:13px;color:var(--muted)">合计 <b style="color:var(--accent);font-size:16px">¥{money(total)}</b></span>
+        </div>
+        <div style="margin:8px 0;display:flex;gap:6px">
+          <button class="btn btn-o" style="flex:1;padding:0 8px" type="button" onclick="selAll()">全选</button>
+          <button class="btn btn-o" style="flex:1;padding:0 8px" type="button" onclick="clrBets()">清除选择</button>
+          <button class="btn btn-d" style="flex:1;padding:0 8px" type="button" onclick="delSel()">删除选中</button>
         </div>
         <div style="max-height:360px;overflow:auto">{bet_rows}</div>
-        <div style="display:flex;justify-content:space-between;margin-top:8px;border-top:1px solid var(--line);padding-top:8px">
-          <span>合计</span><b>¥{money(total)}</b>
-        </div>
       </div>
     </div>
     <form id="fadd" method="post" style="display:none">
@@ -501,22 +540,110 @@ def index():
       <input name="action" value="edit"><input name="date" value="{iso}">
       <input name="cid" value="{cid or ''}"><input name="bid" id="ebid"><input name="amount" id="eamt">
     </form>
+    <div id="amtModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:99;align-items:center;justify-content:center">
+      <div style="background:var(--elev);border-radius:16px;padding:22px 20px 18px;width:min(320px,90vw);box-shadow:0 24px 70px rgba(0,0,0,.35);text-align:center">
+        <b id="amtTitle" style="font-size:17px;display:block">录入 号码 04</b>
+        <input type="number" id="amtInput" value="10" min="1" step="any" style="width:100%;margin:16px 0 18px;height:46px;font-size:20px;text-align:center;border:2px solid var(--accent);border-radius:12px;outline:none">
+        <div style="display:flex;gap:10px">
+          <button class="btn btn-o" style="flex:1;height:42px" type="button" onclick="closeAmt()">取消</button>
+          <button class="btn btn-p" style="flex:1;height:42px" type="button" onclick="submitAmt()">确定</button>
+        </div>
+      </div>
+    </div>
     <script>
-    function tog(el){{el.classList.toggle('sel');document.getElementById('seln').textContent='已选 '+document.querySelectorAll('.nb.sel').length;}}
-    function clr(){{document.querySelectorAll('.nb.sel').forEach(e=>e.classList.remove('sel'));document.getElementById('seln').textContent='已选 0';}}
-    function batch(){{
-      const ns=[...document.querySelectorAll('.nb.sel')].map(e=>e.dataset.n).filter(Boolean);
-      const a=document.getElementById('bam').value;
-      if(!ns.length||!(+a>0)) return alert('请选择号码并输入金额');
-      document.getElementById('bnums').value=ns.join(',');
+    var batchMode=false,batchNums=[];
+    function beep(){{
+      try{{
+        var A=window.AudioContext||window.webkitAudioContext;if(!A)return;
+        var c=new A(),o=c.createOscillator(),g=c.createGain();
+        o.type='square';o.frequency.value=880;
+        g.gain.setValueAtTime(.12,c.currentTime);
+        g.gain.exponentialRampToValueAtTime(.001,c.currentTime+.18);
+        o.connect(g);g.connect(c.destination);o.start();o.stop(c.currentTime+.2);
+      }}catch(e){{}}
+    }}
+    function updSel(){{document.getElementById('seln').textContent='已选 '+document.querySelectorAll('.nb.sel').length;}}
+    function renderPicks(){{
+      var box=document.getElementById('picklist');
+      if(!batchNums.length){{box.innerHTML='<span class="muted">尚未选择数字</span>';return;}}
+      box.innerHTML=batchNums.map(function(v){{
+        var el=document.querySelector('.nb[data-n="'+v+'"]');
+        var has=el&&el.classList.contains('has');
+        return '<span class="pick'+(has?' has':'')+'">'+v+' <a href="#" data-v="'+v+'" onclick="unpick(this.dataset.v);return false">×</a></span>';
+      }}).join('');
+    }}
+    function openBatch(){{
+      batchMode=true;batchNums=[];
+      document.getElementById('bam2').value='';
+      renderPicks();
+      document.getElementById('bmodal').style.display='block';
+      beep();
+    }}
+    function closeBatch(){{
+      batchMode=false;
+      document.getElementById('bmodal').style.display='none';
+      document.querySelectorAll('.nb.sel').forEach(function(e){{e.classList.remove('sel');}});
+      updSel();
+    }}
+    function tog(el){{
+      if(batchMode){{
+        beep();
+        el.classList.remove('flash');void el.offsetWidth;el.classList.add('flash');
+        var v=el.dataset.n;
+        var i=batchNums.indexOf(v);
+        if(i>=0){{batchNums.splice(i,1);el.classList.remove('sel');}}
+        else{{batchNums.push(v);el.classList.add('sel');}}
+        renderPicks();updSel();return;
+      }}
+      beep();
+      el.classList.remove('flash');void el.offsetWidth;el.classList.add('flash');
+      var v=el.dataset.n;
+      if(el.classList.contains('has')){{
+        openAmt('数字 '+v+' 已有押注，继续追加金额','number',v);
+      }}else{{
+        openAmt('录入 号码 '+v,'number',v);
+      }}
+    }}
+    function unpick(v){{
+      var i=batchNums.indexOf(v);
+      if(i>=0) batchNums.splice(i,1);
+      var el=document.querySelector('.nb[data-n="'+v+'"]');
+      if(el) el.classList.remove('sel');
+      renderPicks();updSel();beep();
+    }}
+    function clr(){{document.querySelectorAll('.nb.sel').forEach(e=>e.classList.remove('sel'));updSel();}}
+    function confirmBatch(){{
+      if(!batchNums.length) return alert('请先点选要录入的号码');
+      const a=document.getElementById('bam2').value;
+      if(!(+a>0)) return alert('请输入统一金额');
+      document.getElementById('bnums').value=batchNums.join(',');
       document.getElementById('bamt').value=a;
       document.getElementById('fbatch').submit();
     }}
-    function one(t,v){{
-      const a=prompt('录入 '+v+' 的金额','10');
-      if(!(+a>0)) return;
-      document.getElementById('bt').value=t;
-      document.getElementById('bv').value=v;
+    function one(el,t,v){{
+      beep();
+      el.classList.remove('flash');void el.offsetWidth;el.classList.add('flash');
+      openAmt('录入 '+v+' 的金额',t,v);
+    }}
+    var amtT=null,amtV=null;
+    function openAmt(title,t,v){{
+      amtT=t;amtV=v;
+      document.getElementById('amtTitle').textContent=title;
+      document.getElementById('amtInput').value='10';
+      document.getElementById('amtModal').style.display='flex';
+      document.getElementById('amtInput').focus();
+      document.getElementById('amtInput').select();
+    }}
+    function closeAmt(){{
+      amtT=null;amtV=null;
+      document.getElementById('amtModal').style.display='none';
+    }}
+    function submitAmt(){{
+      if(!amtT) return;
+      const a=document.getElementById('amtInput').value;
+      if(!(+a>0)) return alert('请输入有效金额');
+      document.getElementById('bt').value=amtT;
+      document.getElementById('bv').value=amtV;
       document.getElementById('ba').value=a;
       document.getElementById('fadd').submit();
     }}
@@ -738,7 +865,7 @@ def ocr():
     )
     text_val = request.form.get("text", "") if request.method == "POST" else ""
     body = f"""<h1>文字自动录入</h1>
-    <p class="muted">支持「马羊猴各字200」「01/37/36各字150」。各字＝每个号码都押该金额；各包＝生肖总额再平均。重叠号码自动相加。</p>
+    <p class="muted">支持「马羊猴各字200」「01/37/36各字150」。各字＝每个号码都押该金额；各包＝生肖总额再平均。重叠号码自动相加。号码换算：01＝1，02＝2，03＝3，04＝4，05＝5，06＝6，07＝7，08＝8，09＝9。</p>
     <div class="ocr2">
       <form id="ocrf" method="post" class="card">
         <div style="display:flex;gap:8px;margin-bottom:8px">
@@ -940,7 +1067,7 @@ def print_bill():
       <button class="btn btn-o" type="button" onclick="window.print()">打印对账单</button>
     </form>
     <div class="card">
-      <h2 style="text-align:center">澳彩收单对账单</h2>
+      <h2 style="text-align:center">明澳彩收单对账单</h2>
       <p style="text-align:center;color:var(--muted)">{frm} 至 {to} · {who}</p>
       <table style="margin-top:16px">
         <thead><tr><th>日期</th><th>客户</th><th>开奖号码</th><th>该号押注</th><th>总押注</th><th>中奖</th><th>应收/应付</th></tr></thead>
@@ -1089,12 +1216,12 @@ def backup_download_one(name):
 
 if __name__ == "__main__":
     init_db()
-    print("澳彩收单独立版  http://127.0.0.1:5000")
+    print("明澳彩收单独立版  http://127.0.0.1:9000")
     print("超级用户 admin / gjxing1111")
     try:
-        webbrowser.open("http://127.0.0.1:5000/login")
+        webbrowser.open("http://127.0.0.1:9000/login")
     except Exception:
         pass
     host = os.environ.get("HOST", "127.0.0.1")
-    port = int(os.environ.get("PORT", "5000"))
+    port = int(os.environ.get("PORT", "9000"))
     app.run(host=host, port=port, debug=False)

@@ -1,7 +1,24 @@
-﻿__pycache__/
+__pycache__/
 *.py[cod]
 *.db
 *.db.bak_*
 backups/
 cookies.txt
 *.html
+
+# 云部署敏感文件（不要推到公开仓库）
+cloudflared.exe
+tunnel_token.txt
+tunnel_cred.json
+tunnel_info.json
+config.yml
+*.log
+_askpass.bat
+
+# 诊断/临时脚本
+_cf_*.py
+_*.py
+
+# 本地备份文件
+*.bak.py
+settlement_core.py
