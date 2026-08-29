@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-明澳彩收单系统 · 独立版
+澳彩收单系统 · 独立版
 运行：python aocai_app.py
 浏览器打开 http://127.0.0.1:9000
-超级用户：admin   密码：gjxing1111
+首次运行自动创建超级用户 admin（初始密码由环境变量 AOCAI_ADMIN_PW 指定，默认随机生成，登录后请立即修改）
 """
 from __future__ import annotations
 import hashlib
@@ -129,8 +129,11 @@ def init_db():
     );
     """)
     if db.execute("SELECT COUNT(*) FROM users").fetchone()[0] == 0:
+        import secrets as _secrets
+        _admin_pw = os.environ.get("AOCAI_ADMIN_PW") or _secrets.token_urlsafe(12)
         db.execute("INSERT INTO users (username, password) VALUES (?,?)",
-                   ("admin", hash_pw("gjxing1111")))
+                   ("admin", hash_pw(_admin_pw)))
+        print(f"[首次初始化] 超级用户 admin 已创建（初始密码由 AOCAI_ADMIN_PW 指定或随机生成，请登录后立即修改）")
     if db.execute("SELECT COUNT(*) FROM customers").fetchone()[0] == 0:
         db.execute("INSERT INTO customers (name, note) VALUES ('张三','示例客户')")
         db.execute("INSERT INTO customers (name, note) VALUES ('李四','示例客户')")
@@ -1216,8 +1219,8 @@ def backup_download_one(name):
 
 if __name__ == "__main__":
     init_db()
-    print("明澳彩收单独立版  http://127.0.0.1:9000")
-    print("超级用户 admin / gjxing1111")
+    print("澳彩收单独立版  http://127.0.0.1:9000")
+    print("请使用超级用户 admin 登录（密码以数据库为准，如忘记可设置环境变量 AOCAI_ADMIN_PW 后重命名数据库重新初始化）")
     try:
         webbrowser.open("http://127.0.0.1:9000/login")
     except Exception:
