@@ -180,8 +180,9 @@ def _parse_line(line: str) -> List[dict]:
 
     # 生肖各字 / 各包（允许逗号分隔：鼠，兔，猴各字40）
     # 各/买/× 三者等价，如：鼠买30、猴×50
+    # 注意：(?:[各买×]) 是 non-capturing，确保 (字|包) 是 group(2)，金额是 group(3)
     zre = re.compile(
-        rf"([{ZODIAC_CHARS},，、]+)[各买×](?:字|包)?(\d+(?:\.\d+)?)"
+        rf"([{ZODIAC_CHARS},，、]+)(?:[各买×])(字|包)?(\d+(?:\.\d+)?)"
     )
     for m in zre.finditer(line):
         mark(m.start(), m.end())
