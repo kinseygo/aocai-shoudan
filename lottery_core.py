@@ -179,8 +179,9 @@ def _parse_line(line: str) -> List[dict]:
             used[i] = True
 
     # 生肖各字 / 各包（允许逗号分隔：鼠，兔，猴各字40）
+    # 各/买/× 三者等价，如：鼠买30、猴×50
     zre = re.compile(
-        rf"([{ZODIAC_CHARS},，、]+)各(字|包)?(\d+(?:\.\d+)?)"
+        rf"([{ZODIAC_CHARS},，、]+)[各买×](?:字|包)?(\d+(?:\.\d+)?)"
     )
     for m in zre.finditer(line):
         mark(m.start(), m.end())
@@ -200,7 +201,8 @@ def _parse_line(line: str) -> List[dict]:
                     out.append({"bet_type": "number", "bet_value": pad2(n), "amount": amt})
 
     # 号码各字 / 各（30.35.40.45各30 或 32/34/2818各20）
-    nre = re.compile(r"([\d./]+)各(?:字|包)?(\d+(?:\.\d+)?)")
+    # 各/买/× 三者等价，如：05.18买20、16.28.39×10、03.04.45各30
+    nre = re.compile(r"([\d./]+)[各买×](?:字|包)?(\d+(?:\.\d+)?)")
     for m in nre.finditer(line):
         if any(used[i] for i in range(m.start(), m.end())):
             continue
@@ -211,10 +213,10 @@ def _parse_line(line: str) -> List[dict]:
         for n in extract_numbers(m.group(1)):
             out.append({"bet_type": "number", "bet_value": pad2(n), "amount": amt})
 
-    # 剩余：01=20 / 马=40 / 红波50
+    # 剩余：01=20 / 马=40 / 红波50 / 39买60 / 25×50
     rest = "".join(ch if not used[i] else " " for i, ch in enumerate(line))
     for m in re.finditer(
-        rf"(\d{{1,2}}|[{ZODIAC_CHARS}]|红波?|蓝波?|绿波?)[=/\-](\d+(?:\.\d+)?)",
+        rf"(\d{{1,2}}|[{ZODIAC_CHARS}]|红波?|蓝波?|绿波?)[=/\-买×](\d+(?:\.\d+)?)",
         rest.replace(" ", ""),
     ):
         amt = float(m.group(2))
