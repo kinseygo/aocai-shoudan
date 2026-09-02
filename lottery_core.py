@@ -201,21 +201,6 @@ def _parse_line(line: str) -> List[dict]:
                 for n in nums:
                     out.append({"bet_type": "number", "bet_value": pad2(n), "amount": amt})
 
-    # 号码各包（02.05.08.11各包30 → 4个数，每个7.5，共30）
-    # 各包=包，等平分金额到组内每个数字
-    nbaore = re.compile(r"([\d./]+)各包(\d+(?:\.\d+)?)")
-    for m in nbaore.finditer(line):
-        if any(used[i] for i in range(m.start(), m.end())):
-            continue
-        mark(m.start(), m.end())
-        nums = extract_numbers(m.group(1))
-        amt = float(m.group(2))
-        if not nums or amt <= 0:
-            continue
-        per = round(amt / len(nums), 2)
-        for n in nums:
-            out.append({"bet_type": "number", "bet_value": pad2(n), "amount": per})
-
     # 号码各字 / 各（30.35.40.45各30 或 32/34/2818各20）
     # 各/买/× 三者等价，如：05.18买20、16.28.39×10、03.04.45各30
     nre = re.compile(r"([\d./]+)[各买×](?:字|包)?(\d+(?:\.\d+)?)")
